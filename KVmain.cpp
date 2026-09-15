@@ -164,7 +164,7 @@ void searchStudent() {
 
 int main()
 {
-    /*
+    
     initAdmin();
 
     int choice;
@@ -209,12 +209,7 @@ int main()
                 break;
             }
         }
-    }*/
-
-
-	Insert(1, { "Jane Smith", "pass456", "456 Elm St", "janesmith@example.com" });
-
-    cout<< Length() << endl;
+    }
 
     return 0;
 }
