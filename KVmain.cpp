@@ -39,42 +39,116 @@ void initAdmin(){
     users[0].rule = RULE_ADMIN;
     userCount = 1;
 }
-
+void adminMenu() {}
+void userMenu() {}
 //登录
-int login(int &outRule) {
-    string inputName,inputKey;
+
+int login(int& outRule) {
+    string inputName, inputKey;
     system("cls");
-    cout<<"============== User Login =============="<<endl;
+    cout << "============== User Login ==============" << endl;
 
-    cout<<"Enter user name: ";cin>>inputName;
-    cout<<"Enter user key: ";cin>>inputKey;
+    cout << "Enter user name: ";cin >> inputName;
+    cout << "Enter user key: ";cin >> inputKey;
 
-    for (int i=0;i<userCount;i++) {
+    for (int i = 0;i < userCount;i++) {
         if (users[i].name == inputName && users[i].key == inputKey) {
-            cout<<"\nLogin Successful Hello,"<<users[i].name<<"\n"<<endl;
+            cout << "\nLogin Successful Hello," << users[i].name << "\n" << endl;
             outRule = users[i].rule;
             system("pause");
             return 1;
         }
     }
-    cout<<"\nUser Not Found"<<endl;
+    cout << "\nUser Not Found" << endl;
     system("pause");
     return -1;
 }
+void signUp() 
+{
+    system("cls");
+    string name;
+    string key;
+    int i = 0;
+    int j = 0;
+    int choice;
+    while(1)
+    {
+        if (name != users[i].name)
+        {
+            cout << "please enter the new user's account and password" << endl;
+            cout << "Enter user name: ";
+            cin >> name;
+            cout << "Enter user key: ";
+            cin>> key;
+            cout << "Registration succeeded" << endl;
+            userCount++;
+            j++;
+            users[j].name = name;
+            users[j].key = key;
+            users[j].rule = 1;
+            i++;
+            cout << "==================================================================" << endl;
+            cout << "+----- Main Menu -----+" << endl;
+            cout << "|  1. Login           |" << endl;
+            cout << "|  2. Sign Up         |" << endl;
+            cout << "|  3. Logout          |" << endl;
+            cout << "+---------------------+" << endl;
+            cout << "Enter your choice: ";
+            cin >> choice;
+            switch (choice) 
+            {
+            case 1: {
+                int loginToken;
+                while (true) {
+                    loginToken = login(ruletoken);
+                    if (loginToken == 1) {
+                        if (ruletoken == RULE_ADMIN)
+                            adminMenu();
+                        else
+                            userMenu();
+                        break;
+                    }
+                    else if (loginToken == -1)
+                        break;
+                }
+                break;
+            }
+            case 2:
+                signUp();
+                break;
+            case 3:
+                cout << "Thank you again!" << endl;
+                system("pause");
+                return;
+                break;
+            default: {
+                cout << "Invalid choice, please try again!" << endl;
+                system("pause");
+                break;
+            }
+            }
+           
+            
+        } 
+        else if (name == users[i].name)
+        {
+            return;
+        }
+    }
 
-void signUp() {}  //注册函数！普通用户权限为 RULE_USER
-int Length() {}
-PasswordItem getStudent(int index){}
-int Locate(PasswordItem student){}
-void Insert(int i,PasswordItem student){}
-PasswordItem Delete(int index){}
-int Empty(){}
-void PrintLine(){}
-void adminMenu() {}
-void userMenu() {}
+    
+}  
+//注册函数！普通用户权限为 RULE_USER
+//int Length() {}
+//PasswordItem getPassword(int index){}
+//int Locate(PasswordItem student){}
+//void Insert(int i,PasswordItem student){}
+//PasswordItem Delete(int index){}
+//int Empty(){}
+//void PrintLine(){}
 
 /*----------------------------------------按成员查找------------------------------------*/
-void searchStudent() {
+void searchPassword() {
     system("cls");
     cout<<"==================== INFO ===================="<<endl;
 
