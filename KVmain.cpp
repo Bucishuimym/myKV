@@ -6,7 +6,7 @@
 using namespace std;
 
 const int Max_User = 100;
-const int Max_Student = 1000;
+const int Max_Password = 1000;
 const int RULE_ADMIN = 2;
 const int RULE_USER = 1;
 
@@ -23,14 +23,13 @@ User users[Max_User];
 int userCount = 0;  //用户数量
 
 //数据结构体
-struct Student {
+struct PasswordItem {
     string name;
-    int id;
-    int age;
-    string sex;
-    int score[3];
+    string key;
+    string address;
+    string emalil;
 };
-Student students[Max_Student];    //顺序表
+PasswordItem students[Max_Password];    //顺序表
 int stuCount = 0;  //表长度
 
 //初始化管理员用户
@@ -64,13 +63,13 @@ int login(int &outRule) {
 }
 
 void signUp() {}  //注册函数！普通用户权限为 RULE_USER
-//int Length() {}
-//Student getStudent(int index){}
-//int Locate(Student student){}
-//void Insert(int i,Student student){}
-//Student Delete(int index){}
-//int Empty(){}
-//void PrintLine(){}
+int Length() {}
+PasswordItem getStudent(int index){}
+int Locate(PasswordItem student){}
+void Insert(int i,PasswordItem student){}
+PasswordItem Delete(int index){}
+int Empty(){}
+void PrintLine(){}
 void adminMenu() {}
 void userMenu() {}
 
