@@ -27,7 +27,7 @@ struct PasswordItem {
     string name;
     string key;
     string address;
-    string emalil;
+    string email;
 };
 PasswordItem students[Max_Password];    //顺序表
 int stuCount = 0;  //表长度
@@ -136,16 +136,85 @@ void signUp()
         }
     }
 
-    
-}  
-//注册函数！普通用户权限为 RULE_USER
-//int Length() {}
-//PasswordItem getPassword(int index){}
-//int Locate(PasswordItem student){}
-//void Insert(int i,PasswordItem student){}
-//PasswordItem Delete(int index){}
-//int Empty(){}
-//void PrintLine(){}
+
+void signUp() {}  //注册函数！普通用户权限为 RULE_USER
+int Length() {
+    return stuCount;
+}
+PasswordItem getStudent(int index){
+	return students[index];
+}
+int Locate(PasswordItem student){
+	for (int i = 0;i < stuCount;i++) {
+		if (students[i].name == student.name) {
+			return i;
+		}
+	}
+    return -1;
+}
+void Insert(int i,PasswordItem student){
+    if (stuCount >= Max_Password || i<0 || i>stuCount) {
+        cout << "Insert failed, invalid position!" << endl;
+        return;
+    }
+    for (int j = stuCount;j > i;j--) {
+        students[j] = students[j-1];
+    }
+    students[i] = student;
+    stuCount++;
+        
+}
+PasswordItem Delete(int index) {
+    PasswordItem temp;
+    if (index < 0 || index >= stuCount) {
+        cout << "Delete failed, invalid position!" << endl;
+        return temp;
+    }
+    temp = students[index];
+    for (int j = index;j < stuCount - 1;j++) {
+        students[j] = students[j + 1];
+    }
+    stuCount--;
+    return temp;
+}
+
+int Empty(){
+    return stuCount == 0 ? 1 : 0;
+}
+void PrintLine() {
+    cout << "==================================================================" << endl;
+}
+void searchStudent() {
+    system("cls");
+    cout << "==================== INFO Search ====================" << endl;
+    if (Empty()) {
+        cout << "No password data!" << endl;
+        system("pause");
+        return;
+    }
+    string searchName;
+    cout << "Input account name to search: ";
+    cin >> searchName;
+    bool findFlag = false;
+    for (int i = 0;i < stuCount;i++) {
+        if (students[i].name == searchName) {
+            PrintLine();
+            cout << "Account: " << students[i].name << endl;
+            cout << "Password: " << students[i].key << endl;
+            cout << "Address: " << students[i].address << endl;
+            cout << "Email: " << students[i].email << endl;
+            PrintLine();
+            findFlag = true;
+        }
+    }
+    if (!findFlag) {
+        cout << "Not found!" << endl;
+    }
+    system("pause");
+}
+                
+void adminMenu() {}
+void userMenu() {}
 
 /*----------------------------------------按成员查找------------------------------------*/
 void searchPassword() {
@@ -170,6 +239,7 @@ void searchPassword() {
 
 int main()
 {
+    
     initAdmin();
 
     int choice;
@@ -215,5 +285,6 @@ int main()
             }
         }
     }
+
     return 0;
 }
