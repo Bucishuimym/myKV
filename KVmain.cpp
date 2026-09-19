@@ -28,6 +28,7 @@ struct User
     string key;
     int uid;
     int rule;
+    
 };
 
 User users[Max_User];
@@ -37,8 +38,9 @@ int userCount = 0;  //用户数量
 struct PasswordItem {
     string name;
     string key;
-    string URL;
+    string URL; 
     int UID;
+
 };
 
 PasswordItem Slist[Max_Password];    //顺序表
@@ -106,7 +108,7 @@ void encryptDecrypt(char* str);
 int Length();
 PasswordItem getPasswordData(int index);
 int Empty();
-void PrintLine();
+
 void searchPassword();
 
 /* =========================================================
@@ -118,6 +120,10 @@ void initAdmin() {
     users[0].key = "123";
     users[0].rule = RULE_ADMIN;
     users[0].uid = uidCount();
+    if (!users[0].key.empty())
+    {
+        encryptDecrypt(&users[0].key[0]);
+    }
     userCount = 1;
 }
 
@@ -126,7 +132,29 @@ int uidCount() {
     int UID = (num + 234565) % 1000 + 9000;
     return UID;
 }
-
+void PrintLineUser()
+{
+    int i;
+    string clearkey; 
+   for (i = 0;i < userCount;i++)
+    {
+            if (users[i].rule == RULE_ADMIN)
+            {
+                for (int j = 0;j < userCount;j++)
+                {
+                    clearkey = users[j].key;
+                    if (!clearkey.empty())
+                    {
+                        encryptDecrypt(&clearkey[0]);
+                    }
+                    cout << "==================================================================" << endl;
+                    cout << users[j].name << "  |  " << clearkey << "  |  " << users[j].uid << "  |  " << users[j].rule << endl;
+                }
+            }
+     }
+   
+       
+}
 //登录
 int login(int& outRule) {
     userUid = 000;
@@ -136,16 +164,31 @@ int login(int& outRule) {
 
     cout << "Enter user name: ";cin >> inputName;
     cout << "Enter user key: ";cin >> inputKey;
-
+    string key;
+    key = inputKey;
+    if (!key.empty())
+   {
+        encryptDecrypt(&key[0]);
+    }
     int i = Locate(users, userCount, inputName);   //先用通用模板按用户名定位
-    if (i != -1 && users[i].key == inputKey) {
+    if (i != -1 && users[i].key == key) {
         cout << "\nLogin Successful Hello," << users[i].name << "\n" << endl;
         outRule = users[i].rule;
-        userUid = users[i].uid;
+        userUid = users[i].uid; 
+        PrintLineUser();
         system("pause");
         return 1;
     }
+    else if (users[i].key!=inputKey)
+    {
+        cout << "error Key" << endl; 
+    }
+    else if (users[i].name != inputName)
+    {
+        cout << "error Name" << endl;
+    }
     cout << "\nUser Not Found" << endl;
+    
     system("pause");
     return -1;
 }
@@ -172,15 +215,19 @@ void signUp() {
 
     cout << "Enter new user key: ";
     cin >> key;
-
+    if (!key.empty())
+    {
+        encryptDecrypt(&key[0]);
+    }
     users[userCount].name = name;
     users[userCount].key = key;
     users[userCount].rule = RULE_USER;
     users[userCount].uid = uidCount();
+   
     userCount++;
-
-    cout << "Registration succeeded!" << endl;
-    //cout<<users[1].uid<<endl;
+    
+    cout << "Registration succeeded!" << endl; 
+    //cout<<users[userCount-1].uid<<endl;
     system("pause");
 }
 
@@ -189,6 +236,15 @@ void signUp() {
  * 增删查已经收进上面的通用模板 Locate / Insert / Delete，
  * 这里只留密码表自己用得到的那几个和界面相关的函数。
  * ========================================================= */
+void encryptDecrypt(char* str) {
+
+    const char key = 0x7F;
+    for (int i = 0;str[i] != '\0';i++)
+    {
+        str[i] = str[i] ^ key;
+    }
+
+}
 int Length(){
     return pasCount;
 }
@@ -200,10 +256,62 @@ PasswordItem getPasswordData(int index) {
 int Empty() {
     return pasCount == 0 ? 1 : 0;
 }
+/*void PrintLineUser()
+{
+    int i;
+    string clearkey;
+    for (i = 0;i < userCount;i++)
+    {
+        switch (i)
+        {
+        case 0:
+            if (users[i].rule == RULE_ADMIN)
+            {
+                for (int j = 0;j < userCount;j++)
+                {
+                    clearkey = users[j].key;
+                    if (!clearkey.empty())
+                    {
+                        encryptDecrypt(&clearkey[0]);
+                    }
+                    cout << "==================================================================" << endl;
+                    cout << users[j].name << "  |  " << clearkey << "  |  " << users[j].uid << "  |  " << users[j].rule << endl;
+                }
+            }
+        }break;
 
+    }
+}*/
+
+void PrintLineData()
+{
+    int i;
+    string clearkey;
+    for (i = 0;i < pasCount;i++)
+    {
+        clearkey = Slist[i].key;
+        if (!clearkey.empty())
+        {
+            encryptDecrypt(&clearkey[0]);
+        }
+        if (users[i].rule == RULE_ADMIN)
+        {
+            for (int j = 0;j < userCount;j++)
+            {
+                cout << "==================================================================" << endl;
+                cout << Slist[j].name << "  |  " << clearkey << "  |  " << Slist[j].URL << "  |  " << Slist[j].UID << endl;
+            }
+        }
+        else
+        {
+            cout<< Slist[i].name << "  |  " << clearkey << "  |  " << Slist[i].URL << "  |  " << Slist[i].UID << endl;
+        }
+    }
+}
 void PrintLine() {
     cout << "==================================================================" << endl;
-
+    PrintLineData();
+    PrintLineUser();
 }
 
 /* =========================================================
@@ -232,7 +340,7 @@ int main()
     while (true)
     {
         system("cls");
-        //cout<<users[0].uid<<endl;
+        cout << users[0].uid << endl;
         cout << "==================================================================" << endl;
         cout << "+----- Main Menu -----+" << endl;
         cout << "|  1. Login           |" << endl;
@@ -277,6 +385,7 @@ int main()
         }
         }
     }
+
 
     return 0;
 }
