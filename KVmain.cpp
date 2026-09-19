@@ -281,6 +281,20 @@ void encryptDecrypt(char* str) {                                               /
     }
 
 }
+
+//把密文按十六进制打出来。异或 0x7F 之后的字节大多落在控制字符区（pw -> 0F 08），
+//直接 cout 一个字符都看不见，转成 hex 才能跟明文一起显示出来。
+string toHex(const string& s) {                                                //密文转十六进制字符串
+    const char* digits = "0123456789ABCDEF";
+    string out;
+    for (size_t i = 0;i < s.size();i++) {
+        unsigned char c = (unsigned char)s[i];
+        out += digits[c >> 4];
+        out += digits[c & 0x0F];
+    }
+    return out;
+}
+
 int Length(){                                                                  //返回密码表长度
     return pasCount;
 }
@@ -297,10 +311,11 @@ int Empty() {                                                                  /
 //showUid 默认 true；普通用户看自己的数据时传 false，不把这条数据属于谁暴露出去
 void PrintLineData(const PasswordItem& item, bool showUid) {                   //打印一行密码数据
     string showkey = item.key;      //拷贝一份来解密，不动表里存的密文
-    encryptDecrypt(&showkey[0]);
+    if (!showkey.empty())
+        encryptDecrypt(&showkey[0]);
     cout << "|————" << item.Username
          << "  |——" << item.URL
-         << "  |——key:" << item.key << "(" << showkey << ")";
+         << "  |——key:" << toHex(item.key) << "(" << showkey << ")";
     if (showUid)
         cout << "  |_UID:" << item.UID;
     cout << endl;
@@ -309,9 +324,10 @@ void PrintLineData(const PasswordItem& item, bool showUid) {                   /
 //打印一条用户数据：key 同样给出密文和明文
 void PrintLineUser(const User& u) {                                            //打印一行用户数据
     string showkey = u.key;         //拷贝一份来解密，不动表里存的密文
-    encryptDecrypt(&showkey[0]);
+    if (!showkey.empty())
+        encryptDecrypt(&showkey[0]);
     cout << "|————" << u.name
-         << "  |——key:" << u.key << "(" << showkey << ")"
+         << "  |——key:" << toHex(u.key) << "(" << showkey << ")"
          << "  |_UID:" << u.uid << endl;
 }
 
@@ -382,10 +398,11 @@ void adminMenu() {                                                             /
                 int pos = LocatePasswordBySeq(id);
                 if (pos != -1) {
                     string showkey = Slist[pos].key;
-                    encryptDecrypt(&showkey[0]);
+                    if (!showkey.empty())
+                        encryptDecrypt(&showkey[0]);
                     cout << "|————" << Slist[pos].Username << " "
                          << "  |——" <<Slist[pos].URL<<" "
-                         << "  |——" <<showkey<<" "
+                         << "  |——key:" <<toHex(Slist[pos].key)<<"("<<showkey<<")"
                          << "  |_" <<Slist[pos].UID<<endl;
                 }
                 break;
@@ -396,9 +413,10 @@ void adminMenu() {                                                             /
                 int pos = LocateUserByUsers(name);
                 if (pos != -1) {
                     string showkey = users[pos].key;
-                    encryptDecrypt(&showkey[0]);
+                    if (!showkey.empty())
+                        encryptDecrypt(&showkey[0]);
                     cout << "|————" << users[pos].name << " "
-                         << "  |——" <<showkey<<" "
+                         << "  |——key:" <<toHex(users[pos].key)<<"("<<showkey<<")"
                          << "  |_"<<users[pos].uid<<endl;
                 }
                 break;
@@ -426,10 +444,11 @@ void adminMenu() {                                                             /
                 cin>>index;
                 PasswordItem x = Delete(Slist, pasCount,index);
                 string showkey = x.key;
-                encryptDecrypt(&showkey[0]);
+                if (!showkey.empty())
+                    encryptDecrypt(&showkey[0]);
                 cout<<"Username:"<<x.Username<<"/"
                     <<"URL:"<<x.URL<<"/"
-                    <<"key:"<<x.key<<"("<<showkey<<")"<<"/"
+                    <<"key:"<<toHex(x.key)<<"("<<showkey<<")"<<"/"
                     <<"UID:"<<x.UID<<"Delete succeeded!\n";
                 system("pause");
                 break;
@@ -487,7 +506,6 @@ void adminMenu() {                                                             /
                     ruletoken = -1;
                 }
 
-                cout << "userCount = " << userCount << "  pasCount = " << pasCount << endl;
                 system("pause");
                 break;
             }
