@@ -227,16 +227,7 @@ int login(int& outRule) {                                                      /
         system("pause");
         return 1;
     }
-    else if (users[i].key!=inputKey)
-    {
-        cout << "error Key" << endl; 
-    }
-    else if (users[i].name != inputName)
-    {
-        cout << "error Name" << endl;
-    }
     cout << "\nUser Not Found" << endl;
-    
     system("pause");
     return -1;
 }
@@ -274,7 +265,6 @@ void signUp() {                                                                /
     userCount++;
     
     cout << "Registration succeeded!" << endl; 
-    //cout<<users[userCount-1].uid<<endl;
     system("pause");
 }
 
@@ -302,32 +292,6 @@ PasswordItem getPasswordData(int index) {                                      /
 int Empty() {                                                                  //密码表是否为空
     return pasCount == 0 ? 1 : 0;
 }
-/*void PrintLineUser()
-{
-    int i;
-    string clearkey;
-    for (i = 0;i < userCount;i++)
-    {
-        switch (i)
-        {
-        case 0:
-            if (users[i].rule == RULE_ADMIN)
-            {
-                for (int j = 0;j < userCount;j++)
-                {
-                    clearkey = users[j].key;
-                    if (!clearkey.empty())
-                    {
-                        encryptDecrypt(&clearkey[0]);
-                    }
-                    cout << "==================================================================" << endl;
-                    cout << users[j].name << "  |  " << clearkey << "  |  " << users[j].uid << "  |  " << users[j].rule << endl;
-                }
-            }
-        }break;
-
-    }
-}*/
 
 //打印一条密码数据：key 同时给出密文（表里存的）和明文（解密后的）
 //showUid 默认 true；普通用户看自己的数据时传 false，不把这条数据属于谁暴露出去
@@ -671,7 +635,6 @@ int main()                                                                     /
     while (true)
     {
         system("cls");
-        cout << users[0].uid << endl;
         cout << "==================================================================" << endl;
         cout << "+----- Main Menu -----+" << endl;
         cout << "|  1. Login           |" << endl;
