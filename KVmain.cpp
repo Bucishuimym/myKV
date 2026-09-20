@@ -18,6 +18,8 @@ const int RULE_USER = 1;
 int ruletoken = -1;  //当前登录用户的权限，-1 表示未登录
 int userUid = 000; //记录当前登录用户的UID，登出重置000
 
+const string USER_FILE = "users.txt";
+const string DATA_FILE = "data.txt";
 /* =========================================================
  * 数据结构定义（用户表 + 密码表）
  * ========================================================= */
@@ -50,20 +52,6 @@ int pasCount = 0;  //表长度
  * 通用顺序表模板
  * ========================================================= */
 //按 name 查找，返回下标，找不到返回 -1
-/*
-template <typename DataType>
-int Locate(DataType list[], int count, const string& name) {
-    if (count == 0)
-        throw "Not Found";
-
-    for (int i = 0;i < count;i++) {
-        if (list[i].name == name) {
-            return i;
-        }
-    }
-    return -1;
-}*/
-
 //在下标 i 处插入。count 必须传引用，因为要就地加一
 template <typename DataType>
 void Insert(DataType list[], int& count, int i, DataType item, int maxSize) {  //顺序表插入，表长 +1
@@ -79,6 +67,7 @@ void Insert(DataType list[], int& count, int i, DataType item, int maxSize) {  /
 }
 
 //取出一条记录的 UID：用户表里叫 uid，密码表里叫 UID，用重载把两个名字统一起来
+
 int getUid(const User& u) { return u.uid; }                                    //取 User 的 uid（重载）
 int getUid(const PasswordItem& p) { return p.UID; }                            //取 PasswordItem 的 UID（重载）
 
@@ -120,28 +109,34 @@ DataType Delete(DataType list[], int& count, int index) {                      /
  * 把所有函数的名字先列在这里，防止互相调用时报错
  * （模板定义好就能直接用不用在这里声明）
  * ========================================================= */
-void initAdmin();
-int login(int& outRule);
-void signUp();
-void adminMenu();
-void userMenu();
-int uidCount();
-string numToStr(int num);
-int strToNum(string str);
-void encryptDecrypt(char* str);
+void initAdmin();                                                              //初始化管理员账号
+int login(int& outRule);                                                       //登录，成功把权限写回 outRule
+void signUp();                                                                 //注册新用户
+void adminMenu();                                                              //管理员菜单
+void userMenu();                                                               //普通用户菜单
+int uidCount();                                                                //生成下一个用户 UID
+string numToStr(int num);                                                      //仅声明、暂无定义：数字转字符串
+int strToNum(string str);                                                      //仅声明、暂无定义：字符串转数字
+void encryptDecrypt(char* str);                                                //对称加解密（异或 0x7F）
+int hexVal(char c);                                                            //单个十六进制字符转数值
+string toHex(const string& s);                                                 //密文转十六进制字符串（写文件、打印用）
+string fromHex(const string& s);                                               //十六进制字符串转回密文（读文件用）
+void outFile();                                                                //将数据覆盖到文件
+void inFile();                                                                 //将数据从文件读入
 
-int Length();
-static int LocatePasswordBySeq(const string& username);
-static int LocateUserByUsers(const string& username);
-static int LocateUserByUid(int uid);
-static int LocatePasswordBySeq(const int& ID);
-static int LocateMyDataBySeq(int seq);
-int PasswordData(int index);
-int Empty();
-void PrintLineData(const PasswordItem& item, bool showUid = true);
-void PrintLineUser(const User& u);
-void ListData();
-void searchPassword();
+int Length();                                                                  //返回密码表长度
+static int LocatePasswordBySeq(const string& username);                        //仅声明、暂无定义（重载：按用户名查密码表）
+static int LocateUserByUsers(const string& username);                          //按用户名在用户组查找，找不到返回 -1
+static int LocateUserByUid(int uid);                                           //按 UID 在用户组查找，找不到返回 -1
+static int LocatePasswordBySeq(const int& ID);                                 //按 UID 在密码表查找，找不到返回 -1
+static int LocateMyDataBySeq(int seq);                                         //我的第 seq 条 → 表里绝对下标
+int PasswordData(int index);                                                   //仅声明、暂无定义（实际用的是 getPasswordData）
+int Empty();                                                                   //密码表是否为空（空返回 1）
+void PrintLineData(const PasswordItem& item, bool showUid = true);             //打印一行密码数据
+void PrintLineUser(const User& u);                                             //打印一行用户数据
+void ListData();                                                               //列出数据：admin 列全部，user 只列自己的
+void searchPassword();                                                         //仅声明、暂无定义：搜索密码
+void PrintUserData();                                                   //打印用户组所有信息
 
 /* =========================================================
  * 用户管理模块
@@ -205,7 +200,7 @@ int LocateMyDataBySeq(int seq) {                                               /
     return -1;
 }
 
-int login(int& outRule) {                                                      //登录，成功写回权限令牌（待办：加密、报错提示？）
+int login(int& outRule) {                                                      //登录，成功写回权限令牌
     userUid = 000;
     string inputName, inputKey;
     system("cls");
@@ -219,17 +214,22 @@ int login(int& outRule) {                                                      /
         encryptDecrypt(&key[0]);
 
     int i = LocateUserByUsers(inputName);   //先用函数按用户名定位
-    if (i != -1 && users[i].key == key) {
-        cout << "\nLogin Successful Hello," << users[i].name << "\n" << endl;
-        outRule = users[i].rule;
-        userUid = users[i].uid; 
-        PrintLineUser(users[i]);    //登录成功，把这行用户信息打出来
+    if (i == -1) {                          //先判查不到：i 是 -1 时不能拿去索引 users，会越界读到表外
+        cout << "\nUsername no found!" << endl;
         system("pause");
-        return 1;
+        return -1;
     }
-    cout << "\nUser Not Found" << endl;
+    if (users[i].key != key) {
+        cout << "\nPassword error!" << endl;
+        system("pause");
+        return -1;
+    }
+    cout << "\nLogin Successful Hello," << users[i].name << "\n" << endl;
+    outRule = users[i].rule;
+    userUid = users[i].uid;
+    PrintLineUser(users[i]);    //登录成功，把这行用户信息打出来
     system("pause");
-    return -1;
+    return 1;
 }
 
 void signUp() {                                                                //注册新用户
@@ -273,7 +273,7 @@ void signUp() {                                                                /
  * 增删查已经收进上面的通用模板 Locate / Insert / Delete，
  * 这里只留密码表自己用得到的那几个和界面相关的函数。
  * ========================================================= */
-void encryptDecrypt(char* str) {                                               //对称加解密（异或 0x7F）
+void encryptDecrypt(char* str) {                                               //对称加解密（异或加密密钥: 0x7F）
     const char key = 0x7F;
     for (int i = 0;str[i] != '\0';i++)
     {
@@ -283,14 +283,31 @@ void encryptDecrypt(char* str) {                                               /
 }
 
 //把密文按十六进制打出来。异或 0x7F 之后的字节大多落在控制字符区（pw -> 0F 08），
-//直接 cout 一个字符都看不见，转成 hex 才能跟明文一起显示出来。
-string toHex(const string& s) {                                                //密文转十六进制字符串
+//因为直接 cout 一个字符都看不见，转成 hex 才能跟明文一起显示出来。
+string toHex(const string& s) {                                                //密文转十六进制字符串，AI
     const char* digits = "0123456789ABCDEF";
     string out;
     for (size_t i = 0;i < s.size();i++) {
         unsigned char c = (unsigned char)s[i];
         out += digits[c >> 4];
         out += digits[c & 0x0F];
+    }
+    return out;
+}
+
+int hexVal(char c) {                                                          //单个十六进制字符转成数值
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    return 0;   //非法字符当 0 处理，不抛异常
+}
+
+//toHex 的逆操作：把 hex 字符串还原成原来的字节
+//文件里的 key 存的是 hex，读回来要先还原成密文，再交给 encryptDecrypt 才是明文
+string fromHex(const string& s) {                                              //十六进制字符串转回密文
+    string out;
+    for (size_t i = 0;i + 1 < s.size();i += 2) {
+        out += (char)((hexVal(s[i]) << 4) | hexVal(s[i + 1]));
     }
     return out;
 }
@@ -308,7 +325,7 @@ int Empty() {                                                                  /
 }
 
 //打印一条密码数据：key 同时给出密文（表里存的）和明文（解密后的）
-//showUid 默认 true；普通用户看自己的数据时传 false，不把这条数据属于谁暴露出去
+//showUid 默认 true；普通用户看自己的数据时传 false，不把这条数据属于who暴露出去
 void PrintLineData(const PasswordItem& item, bool showUid) {                   //打印一行密码数据
     string showkey = item.key;      //拷贝一份来解密，不动表里存的密文
     if (!showkey.empty())
@@ -326,23 +343,108 @@ void PrintLineUser(const User& u) {                                            /
     string showkey = u.key;         //拷贝一份来解密，不动表里存的密文
     if (!showkey.empty())
         encryptDecrypt(&showkey[0]);
-    cout << "|————" << u.name
-         << "  |——key:" << toHex(u.key) << "(" << showkey << ")"
-         << "  |_UID:" << u.uid << endl;
+    cout << "|————" << u.name << endl
+        << "  |——key:" << toHex(u.key) << "(" << showkey << ")" << endl
+        << "  |_UID:" << u.uid << endl
+        << endl;
 }
 
+void PrintUserData() {                                                  //打印用户组所有信息
+    if (ruletoken != RULE_ADMIN) {
+        cout << "[INFO] - Rule error!\n";
+        system("pause");
+        return;
+    }
+    for (int i = 0; i < userCount; ++i) {
+        PrintLineUser(users[i]);
+    }
+}
 /* =========================================================
- * 持久化与加密模块（文件读写）
- * =========================================================
- * saveToFile() / loadFromFile()
- * 目前数据只存在内存里，程序退出后用户表和密码表都会丢失。
- * 实现时只要在「函数声明」那段里补上这两个函数的声明即可。
- * ========================================================= */
+ - 持久化与加密模块（文件读写）
+ - =========================================================
+ - 数据只存在内存里，程序退出后用户表和密码表都会丢失。
+ - ========================================================= */
+void outFile() {                                                               //将数据覆盖到文件
+    ofstream outUser(USER_FILE);
+    ofstream outData(DATA_FILE);
 
+    if (!outUser.is_open() || !outData.is_open()) {
+        cout << "[INFO] - File data error!\n";
+        system("pause");
+        return;
+    }
 
+    //分隔符用 \t：name / URL 都是 cin >> 读进来的，不可能含空白，所以不会跟分隔符撞
+    //key 一律写成 hex（toHex）：密文是异或后的裸字节，里面可能正好是分隔符乃至 0x0A/0x0D（明文 u / r）
+    for (int i = 0; i < userCount; ++i) {
+        outUser << users[i].name << '\t' << toHex(users[i].key) << '\t' << users[i].rule << '\t' << users[i].uid << '\n';
+    }
+
+    for (int i = 0; i < pasCount; ++i) {
+        outData << Slist[i].Username << '\t' << Slist[i].URL << '\t' << toHex(Slist[i].key) << '\t' << Slist[i].UID << '\n';
+    }
+
+    outUser.close();
+    outData.close();
+}
+
+void inFile() {                                                                //将数据从文件读入
+    ifstream inUser(USER_FILE);
+    ifstream inData(DATA_FILE);
+
+    if (!inUser.is_open() || !inData.is_open()) {
+        return;
+    }
+
+    string line;    //从文件中获取用户数据
+    if (inUser.is_open()) {
+        userCount = 0;
+        while (getline(inUser, line) && userCount < Max_User) {
+            if (line.empty())continue;
+            stringstream ss(line);
+            
+            string iName, iKey, iRule, iUid;    //按 outFile 写出的 name/key/rule/uid 顺序读
+            getline(ss, iName, '\t');
+            getline(ss, iKey, '\t');
+            getline(ss, iRule, '\t');
+            getline(ss, iUid, '\t');
+
+            users[userCount].name = iName;
+            users[userCount].key = fromHex(iKey);   //文件里是 hex，先还原成密文字节
+            users[userCount].rule = atoi(iRule.c_str());
+            users[userCount].uid = atoi(iUid.c_str());
+
+            userCount++;
+        }
+        inUser.close();
+    }
+
+    if (inData.is_open()) {
+        pasCount = 0;
+        while (getline(inData, line)) {
+            if (line.empty())continue;
+            stringstream ss(line);
+
+            string iUsername, iUrl, iKey, iUid;    //按 outFile 写出的 Username/URL/key/UID 顺序读
+            getline(ss, iUsername, '\t');
+            getline(ss, iUrl, '\t');
+            getline(ss, iKey, '\t');
+            getline(ss, iUid, '\t');
+
+            Slist[pasCount].Username = iUsername;
+            Slist[pasCount].URL = iUrl;
+            Slist[pasCount].key = fromHex(iKey);    //文件里是 hex，先还原成密文字节
+            Slist[pasCount].UID = atoi(iUid.c_str());
+
+            pasCount++;
+        }
+        inData.close();
+    }
+
+}
 /* =========================================================
- * 菜单与主函数
- * ========================================================= */
+ - 菜单与主函数
+ - ========================================================= */
 //列出数据，分两层：先看当前令牌，admin 直接列出全部用户的数据，
 //user 则按全局变量 userUid 匹配，只列出跟自己相关的那几条
 //user 看到的每行前面带一个从 1 开始的序号，删除时输的就是它（见 LocateMyDataBySeq）
@@ -353,7 +455,7 @@ void ListData() {                                                              /
         if (!seeAll && Slist[i].UID != userUid)
             continue;                       //不是自己的数据直接跳过，连 UID 都不露出来
         if (!seeAll)
-            cout << "[" << shown + 1 << "] ";   //这个号只在"我自己的数据"里连续，不是表里的绝对下标
+            cout << "[" << shown + 1 << "] ";   //这个号只在"user自己的数据"里连续，不是表里的绝对下标
         PrintLineData(Slist[i], seeAll);    //admin 带 UID，user 不带
         shown++;
     }
@@ -367,17 +469,17 @@ void adminMenu() {                                                             /
     int choice;
     while (true) {
         system("cls");
-        cout << "+================= 管理员菜单 =================+" << endl;
-        cout << "| [1].按UID查询密码数据                        |" << endl;
-        cout << "| [2].按用户名查询用户                         |" << endl;
-        cout << "| [3].插入密码数据                             |" << endl;
-        cout << "| [4].插入用户数据                             |" << endl;
-        cout << "| [5].按位置删除密码数据                       |" << endl;
-        cout << "| [6].按位置/UID删除用户数据                   |" << endl;
-        cout << "| [7].打印全部密码数据                         |" << endl;
-        cout << "| [8].打印全部用户数据                         |" << endl;
-        cout << "| [9].退出登录                                 |" << endl;
-        cout << "+----------------------------------------------+" << endl;
+        cout << "+================= Admin Menu ==================+" << endl;
+        cout << "| [1].按UID查询密码数据                         |" << endl;
+        cout << "| [2].按用户名查询用户                          |" << endl;
+        cout << "| [3].插入密码数据                              |" << endl;
+        cout << "| [4].插入用户数据                              |" << endl;
+        cout << "| [5].按位置删除密码数据                        |" << endl;
+        cout << "| [6].按位置/UID删除用户数据                    |" << endl;
+        cout << "| [7].打印全部密码数据                          |" << endl;
+        cout << "| [8].打印全部用户数据                          |" << endl;
+        cout << "| [9].退出登录                                  |" << endl;
+        cout << "+-----------------------------------------------+" << endl;
         cout << "Enter your choice: ";
         cin >> choice;      //输入要放在循环里，不然 choice 一直是第一次的值，菜单会死循环
         if (!cin) {
@@ -400,10 +502,11 @@ void adminMenu() {                                                             /
                     string showkey = Slist[pos].key;
                     if (!showkey.empty())
                         encryptDecrypt(&showkey[0]);
-                    cout << "|————" << Slist[pos].Username << " "
-                         << "  |——" <<Slist[pos].URL<<" "
-                         << "  |——key:" <<toHex(Slist[pos].key)<<"("<<showkey<<")"
-                         << "  |_" <<Slist[pos].UID<<endl;
+                    cout << "|————" << Slist[pos].Username << "\n"
+                         << "  |——" <<Slist[pos].URL<<"\n"
+                         << "  |——key:" <<toHex(Slist[pos].key)<<"("<<showkey<<")" <<"\n"
+                         << "  |_" <<Slist[pos].UID<<endl
+                         << endl;
                 }
                 break;
             }
@@ -415,10 +518,12 @@ void adminMenu() {                                                             /
                     string showkey = users[pos].key;
                     if (!showkey.empty())
                         encryptDecrypt(&showkey[0]);
-                    cout << "|————" << users[pos].name << " "
-                         << "  |——key:" <<toHex(users[pos].key)<<"("<<showkey<<")"
-                         << "  |_"<<users[pos].uid<<endl;
+                    cout << "|————" << users[pos].name << "\n"
+                        << "  |——key:" << toHex(users[pos].key) << "(" << showkey << ")" << endl
+                        << "  |_" << users[pos].uid << endl
+                        << endl;
                 }
+                system("pause");
                 break;
             }
             case 3: {  //[3].InsertData
@@ -515,7 +620,7 @@ void adminMenu() {                                                             /
                 break;
             }
             case 8: {  //[8].PrintUserdata 还没写
-                cout << "Not implemented yet!" << endl;
+                PrintUserData();
                 system("pause");
                 break;
             }
@@ -542,14 +647,22 @@ void userMenu() {                                                              /
 
     int choice;
     while (true) {
+
+        if (ruletoken != RULE_USER) {   //兜底：防止return没有正确切出！
+            cout << "无权限访问用户菜单！" << endl;
+            system("pause");
+            return;
+        }
+
         system("cls");
-        cout << "+================== 用户菜单 ==================+" << endl;
-        cout << "| [1].查看我的账号信息                         |" << endl;
-        cout << "| [2].查看我的密码数据                         |" << endl;
-        cout << "| [3].插入我的密码数据                         |" << endl;
-        cout << "| [4].按位置删除我的数据                       |" << endl;
-        cout << "| [5].退出登录                                 |" << endl;
-        cout << "+----------------------------------------------+" << endl;
+        cout << "+================== 用户菜单 ===================+" << endl;
+        cout << "| [1].查看我的账号信息                          |" << endl;
+        cout << "| [2].查看我的密码数据                          |" << endl;
+        cout << "| [3].插入我的密码数据                          |" << endl;
+        cout << "| [4].按位置删除我的数据                        |" << endl;
+        cout << "| [5].退出登录                                  |" << endl;
+        cout << "| [6].注销该账号                                |" << endl;
+        cout << "+-----------------------------------------------+" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
         if (!cin) {
@@ -636,6 +749,46 @@ void userMenu() {                                                              /
                 ruletoken = -1;
                 return;
             }
+            case 6: {  //[6].注销账号
+                int index;
+                index = LocateUserByUid(userUid);
+                User deleted = Delete(users, userCount, index);
+                if (deleted.uid == 0) {     //删除失败时返回的是值初始化的空记录
+                    system("pause");
+                    break;
+                }
+
+                cout << "\n 注销成功，被注销的用户数据：" << endl;
+                PrintLineUser(deleted); //
+
+                //级联删除该 UID 在数据组里缓存的全部数据
+                int removed = 0;
+                for (int i = 0; i < pasCount; ) {
+                    if (Slist[i].UID == deleted.uid) {
+                        PasswordItem d = Delete(Slist, pasCount, i);
+                        PrintLineData(d);
+                        removed++;
+                        //这里不能再写 i++：删掉后 i 位置已经换成了后面的元素，i 自增会跳过一个
+                    }
+                    else {
+                        i++;
+                    }
+                }
+
+                if (removed == 0)
+                    cout << "该用户在数据组中没有缓存数据。" << endl;
+                else
+                    cout << "共删除 " << removed << " 条数据。" << endl;
+
+                //登录态一起重置
+                if (userUid == deleted.uid) {
+                    userUid = 000;
+                    ruletoken = -1;
+                }
+
+                system("pause");
+                return;
+            }
             default: {
                 cout << "Invalid choice, please try again!" << endl;
                 system("pause");
@@ -647,20 +800,36 @@ void userMenu() {                                                              /
 
 int main()                                                                     //主函数：主菜单循环
 {
-    initAdmin();
+    inFile();                       //先尝试从文件恢复
+    if (userCount == 0)             //users.txt 不存在或压根没读到用户，才算首次运行
+        initAdmin();                //只有首次运行才建 admin，否则每次启动都会多出来一个
 
     int choice;
     while (true)
     {
         system("cls");
-        cout << "==================================================================" << endl;
-        cout << "+----- Main Menu -----+" << endl;
-        cout << "|  1. Login           |" << endl;
-        cout << "|  2. Sign Up         |" << endl;
-        cout << "|  3. Logout          |" << endl;
-        cout << "+---------------------+" << endl;
-        cout << "Enter your choice: ";
+        cout << "=================================================================" << endl;
+        cout << "                   +----- Main Menu -----+" << endl;
+        cout << "                   |  1. Login           |" << endl;
+        cout << "                   |  2. Sign Up         |" << endl;
+        cout << "                   |  3. Logout          |" << endl;
+        cout << "                   +---------------------+" << endl;
+        cout << endl;
+        cout << "Enter your choice please: ";
         cin >> choice;
+        if (!cin) {     //跟子菜单一样兜一道：没有这个 guard，非数字输入会让 failbit 钉死、菜单无限刷屏
+            bool atEof = cin.eof();     //要在 clear() 之前判断，clear() 会把 eofbit 一起清掉
+            cin.clear();
+            cin.ignore(1000, '\n');
+            if (atEof) {
+                outFile();              //输入流到头了
+                return 0;
+            }
+            cout << "Invalid input, please enter a number!" << endl;
+            system("pause");
+            continue;
+        }
+
         switch (choice) {
         case 1:
         {
@@ -670,10 +839,14 @@ int main()                                                                     /
                 loginToken = login(ruletoken);
                 if (loginToken == 1)
                 {
-                    if (ruletoken == RULE_ADMIN)
+                    if (ruletoken == RULE_ADMIN) {
                         adminMenu();
-                    else if (ruletoken == RULE_USER)
+                        outFile();      //子菜单返回（登出/EOF）时落盘，不用等下次退出
+                    }
+                    else if (ruletoken == RULE_USER) {
                         userMenu();
+                        outFile();
+                    }
                     else
                         throw "[INFO] - error: Unknown rule token";
                     break;
@@ -687,6 +860,7 @@ int main()                                                                     /
             signUp();
             break;
         case 3:
+            outFile();                  //退出前把内存里的两张表覆盖回文件
             cout << "Thank you again!" << endl;
             system("pause");
             return 0;

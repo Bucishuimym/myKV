@@ -1,0 +1,56 @@
+# =========================================================
+# myKV / .gitignore
+# 只保留源码：KVmain.cpp、kvH.h、README.md、.gitignore
+# =========================================================
+
+# ---------- MSVC / Visual Studio 编译产物 ----------
+x64/
+Debug/
+Release/
+*.obj
+*.exe
+*.ilk
+*.pdb
+*.idb
+*.iobj
+*.ipdb
+*.exp
+*.lib
+*.res
+*.tlog
+*.log
+*.recipe
+*.lastbuildstate
+
+# ---------- Visual Studio 工程与缓存 ----------
+# 工程文件本人选择不入库；想让别人 clone 后能直接构建，注释掉下面 5 行即可
+CMakeLists.txt
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.slnx
+*.sln
+.vs/
+
+# ---------- CLion / IDEA ----------
+.idea/
+*.iml
+
+# ---------- CMake / Ninja 构建目录 ----------
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+*.ninja
+.ninja_deps
+.ninja_log
+
+# ---------- 运行期生成的数据文件 ----------
+# 里面存的是用户表和密文密码，纯本地数据，不要提交
+users.txt
+data.txt
+
+# ---------- 编辑器杂项 ----------
+*.swp
+*~
+*.autosave
