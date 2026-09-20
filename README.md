@@ -14,11 +14,16 @@ C++ 课程设计。单文件实现（`KVmain.cpp`），带用户体系、两级�
 
 ## 编译与运行
 
+仓库里只有源码，工程文件（CMakeLists / .vcxproj / .slnx）不进版本库，clone 下来后按下面任一种方式自己建工程：
+
 | 方式 | 做法 |
 | --- | --- |
-| CLion / CMake | 直接打开工程构建（`CMakeLists.txt` 已为 g++ 配好 `-fexec-charset=GBK`，中文不乱码） |
-| Visual Studio | 打开 `myKV.vcxproj`（或 `myKV.slnx`）构建 |
 | 命令行 g++ | `g++ -std=c++17 -fexec-charset=GBK -o myKV KVmain.cpp` |
+| Visual Studio | 新建空项目 → 把 `KVmain.cpp`、`kvH.h` 加进去 → 生成（MSVC 默认按 GBK 编码字面量，中文不乱码） |
+| CLion / CMake | 新建工程后把这两个文件拷进去；让 g++ 编译时记得加 `-fexec-charset=GBK` |
+
+> 为什么要 `-fexec-charset=GBK`：g++ 默认把中文字面量编成 UTF-8，而 Windows 控制台是 GBK(cp936)，
+> 不加这个选项，运行起来中文输出是乱码（MSVC 的默认行为就是 GBK，不受影响）。
 
 程序在**当前工作目录**下读写 `users.txt` 和 `data.txt`（不存在就自动创建）。
 首次运行的默认管理员：**admin / 123**。
@@ -32,8 +37,9 @@ C++ 课程设计。单文件实现（`KVmain.cpp`），带用户体系、两级�
 myKV/
 ├── KVmain.cpp          全部实现：常量、数据结构、算法、菜单、main
 ├── kvH.h               预留头文件（当前为空）
-└── users.txt           运行时生成：用户表
-    data.txt            运行时生成：密码数据表
+├── .gitignore          过滤编译产物；工程文件与 IDE 配置也不入库
+└── users.txt           运行时生成：用户表（存密文，已被 .gitignore 忽略）
+    data.txt            运行时生成：密码数据表（同上）
 ```
 
 ## 功能模块图
